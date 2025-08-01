@@ -12,11 +12,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Helper: determine band by frequency
     function pickBandColor(frequency) {
+        if (!frequency) return "gray";
         if (frequency >= 30e6 && frequency <= 88e6) return bandColors["VHF"];
         if (frequency >= 225e6 && frequency <= 400e6) return bandColors["UHF"];
         if (frequency >= 800e6 && frequency <= 900e6) return bandColors["Secure"];
         if (frequency >= 1.2e9 && frequency <= 1.3e9) return bandColors["Surveillance"];
         return "gray"; // fallback if unknown
+    }
+
+    function showError(message) {
+        chartDiv.innerHTML = `<div style="color:red; font-weight:bold; padding:20px;">${message}</div>`;
+        console.error(message);
     }
 
     async function fetchFileList() {
@@ -25,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!res.ok) throw new Error(`Failed to load timelines.json: ${res.status}`);
             return await res.json();
         } catch (e) {
-            console.error("Error fetching file list:", e);
+            showError("Error loading timelines.json — check that it exists and is valid JSON.");
             return [];
         }
     }
@@ -37,25 +43,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!res.ok) throw new Error(`Failed to load ${file}: ${res.status}`);
             const text = await res.text();
 
-            // Parse HTML to DOM
+            // Parse HTML
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, 'text/html');
             const scriptTags = Array.from(doc.querySelectorAll('script'));
 
-            // Find the script containing "Plotly.newPlot"
+            // Find script containing "Plotly.newPlot"
             const plotScript = scriptTags.find(tag => tag.textContent.includes('Plotly.newPlot'));
             if (!plotScript) throw new Error(`No Plotly script found in ${file}`);
 
-            // Extract JSON objects from Plotly.newPlot(...) call
+            // Extract JSON data & layout
             const match = plotScript.textContent.match(/Plotly\.newPlot\([^,]+,(.+),(.+)\);/s);
             if (!match) throw new Error(`Unable to parse Plotly data in ${file}`);
 
             const data = JSON.parse(match[1]);
             const layout = JSON.parse(match[2]);
-
             return { data, layout, file };
         } catch (e) {
-            console.error("Error parsing Plotly HTML for", file, e);
+            console.error("Error parsing", file, e);
             return null;
         }
     }
@@ -65,16 +70,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         const traces = [];
         for (const file of files) {
             const parsed = await fetchPlotlyData(file);
-            if (!parsed) continue;
+            if (!parsed) {
+                console.warn(`Skipping ${file} (failed to parse).`);
+                continue;
+            }
 
             parsed.data.forEach(trace => {
                 trace.name = file.split("/").pop();
 
-                // Try to get frequency from trace name or metadata
+                // Try to infer frequency
                 let freq = null;
                 if (trace.name && trace.name.match(/\d+(\.\d+)?[MmGg][Hh][Zz]/)) {
                     const mhz = parseFloat(trace.name.match(/\d+(\.\d+)?/)[0]);
-                    freq = mhz >= 1000 ? mhz * 1e6 : mhz * 1e6;
+                    freq = mhz * 1e6;
                 } else if (trace.customdata && trace.customdata.length) {
                     freq = parseFloat(trace.customdata[0]) || null;
                 }
@@ -83,6 +91,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 trace.line.color = pickBandColor(freq);
                 traces.push(trace);
             });
+        }
+
+        if (traces.length === 0) {
+            showError("No valid timeline data loaded — check your timeline files and JSON manifest.");
+            return;
         }
 
         Plotly.newPlot(chartDiv, traces, {
@@ -96,6 +109,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Build the grid of session links
     function buildGrid(files) {
         gridDiv.innerHTML = "";
+        if (files.length === 0) {
+            gridDiv.innerHTML = "<p style='color:red;'>No timeline files listed in timelines.json</p>";
+            return;
+        }
         files.forEach(file => {
             const a = document.createElement("a");
             a.href = file;
@@ -113,3 +130,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     buildGrid(timelineFiles);
     await buildChart(timelineFiles);
 });
+
