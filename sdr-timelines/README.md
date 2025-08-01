@@ -6,3 +6,4 @@
 3. Visit `https://stellarquantalabs.org/sdr-timelines/` to see the updated dashboard.
 
 The dashboard will automatically display all new timelines and include them in the cumulative chart.
+ 
