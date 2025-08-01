@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SDR Timelines Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div class="legend">
+        <h3>Band Legend</h3>
+        <p><span style="color:blue;">●</span> VHF Military (30–88 MHz)</p>
+        <p><span style="color:red;">●</span> UHF Military Aviation & Satcom (225–400 MHz)</p>
+        <p><span style="color:green;">●</span> Secure Trunked/Tactical (800–900 MHz)</p>
+        <p><span style="color:purple;">●</span> Surveillance / Experimental L‑Band (1.2–1.3 GHz)</p>
+    </div>
+    <div id="chart"></div>
+    <h2>Session Timelines</h2>
+    <div id="timeline-grid"></div>
+    <script src="dashboard.js"></script>
+</body>
+</html>
