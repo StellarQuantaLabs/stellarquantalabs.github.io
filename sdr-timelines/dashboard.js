@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const chartDiv = document.getElementById("chart");
     const gridDiv = document.getElementById("timeline-grid");
 
-    // Band color mapping based on frequency
     const bandColors = {
         "VHF": "blue",         // 30–88 MHz
         "UHF": "red",          // 225–400 MHz
@@ -10,14 +9,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         "Surveillance": "purple" // 1.2–1.3 GHz
     };
 
-    // Helper: determine band by frequency
     function pickBandColor(frequency) {
         if (!frequency) return "gray";
         if (frequency >= 30e6 && frequency <= 88e6) return bandColors["VHF"];
         if (frequency >= 225e6 && frequency <= 400e6) return bandColors["UHF"];
         if (frequency >= 800e6 && frequency <= 900e6) return bandColors["Secure"];
         if (frequency >= 1.2e9 && frequency <= 1.3e9) return bandColors["Surveillance"];
-        return "gray"; // fallback if unknown
+        return "gray";
     }
 
     function showError(message) {
@@ -36,28 +34,43 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // Extract Plotly data from an HTML export
     async function fetchPlotlyData(file) {
         try {
             const res = await fetch(file);
             if (!res.ok) throw new Error(`Failed to load ${file}: ${res.status}`);
             const text = await res.text();
-
-            // Parse HTML
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, 'text/html');
             const scriptTags = Array.from(doc.querySelectorAll('script'));
 
-            // Find script containing "Plotly.newPlot"
-            const plotScript = scriptTags.find(tag => tag.textContent.includes('Plotly.newPlot'));
-            if (!plotScript) throw new Error(`No Plotly script found in ${file}`);
+            // Try multiple extraction patterns
+            let data = null, layout = null;
 
-            // Extract JSON data & layout
-            const match = plotScript.textContent.match(/Plotly\.newPlot\([^,]+,(.+),(.+)\);/s);
-            if (!match) throw new Error(`Unable to parse Plotly data in ${file}`);
+            // Pattern 1: Standard Plotly.newPlot(...) call
+            const plotScript = scriptTags.find(tag => tag.textContent.includes('Plotly.newPlot') || tag.textContent.includes('Plotly.react'));
+            if (plotScript) {
+                const match = plotScript.textContent.match(/Plotly\.(?:newPlot|react)\([^,]+,(.+),(.+)\);/s);
+                if (match) {
+                    data = JSON.parse(match[1]);
+                    layout = JSON.parse(match[2]);
+                }
+            }
 
-            const data = JSON.parse(match[1]);
-            const layout = JSON.parse(match[2]);
+            // Pattern 2: window.PLOTLYENV or embedded JSON figure
+            if (!data) {
+                const figureScript = scriptTags.find(tag => tag.textContent.includes('PLOTLYENV') || tag.textContent.includes('data') && tag.textContent.includes('layout'));
+                if (figureScript) {
+                    const jsonMatch = figureScript.textContent.match(/({\s*"data":.+?"layout":.+?})/s);
+                    if (jsonMatch) {
+                        const fig = JSON.parse(jsonMatch[1]);
+                        data = fig.data;
+                        layout = fig.layout;
+                    }
+                }
+            }
+
+            if (!data || !layout) throw new Error(`Could not parse Plotly figure data in ${file}`);
+
             return { data, layout, file };
         } catch (e) {
             console.error("Error parsing", file, e);
@@ -65,7 +78,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // Build the cumulative chart
     async function buildChart(files) {
         const traces = [];
         for (const file of files) {
@@ -77,9 +89,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             parsed.data.forEach(trace => {
                 trace.name = file.split("/").pop();
-
-                // Try to infer frequency
                 let freq = null;
+
+                // Infer frequency from trace name or customdata
                 if (trace.name && trace.name.match(/\d+(\.\d+)?[MmGg][Hh][Zz]/)) {
                     const mhz = parseFloat(trace.name.match(/\d+(\.\d+)?/)[0]);
                     freq = mhz * 1e6;
@@ -106,7 +118,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Build the grid of session links
     function buildGrid(files) {
         gridDiv.innerHTML = "";
         if (files.length === 0) {
@@ -130,4 +141,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     buildGrid(timelineFiles);
     await buildChart(timelineFiles);
 });
+
 
