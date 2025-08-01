@@ -1,7 +1,7 @@
 # SDR Timelines Dashboard
 
 ## How to use
-### **IN DEVELOPMENT**
+### **~IN DEVELOPMENT~**
 
 1. Upload your `timeline_*.html` files into this folder.
 2. Commit and push changes to the repository.
