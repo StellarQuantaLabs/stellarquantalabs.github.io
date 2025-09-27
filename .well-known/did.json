@@ -3,7 +3,7 @@
   "id": "did:web:stellarquantalabs.org",
   "verificationMethod": [
     {
-      "id": "did:web:stellarquantalabs.org#key-1",
+      "id": "did:web:stellarquantalabs.org#8c096cd80e5459c873c07e96f0c9146vcSigningKey-c17d2",
       "type": "JsonWebKey2020",
       "controller": "did:web:stellarquantalabs.org",
       "publicKeyJwk": {
@@ -14,8 +14,8 @@
       }
     }
   ],
-  "authentication": ["did:web:stellarquantalabs.org#key-1"],
-  "assertionMethod": ["did:web:stellarquantalabs.org#key-1"],
+  "authentication": ["did:web:stellarquantalabs.org#8c096cd80e5459c873c07e96f0c9146vcSigningKey-c17d2"],
+  "assertionMethod": ["did:web:stellarquantalabs.org#8c096cd80e5459c873c07e96f0c9146vcSigningKey-c17d2"],
   "service": [
     {
       "id": "did:web:stellarquantalabs.org#linkeddomains",
