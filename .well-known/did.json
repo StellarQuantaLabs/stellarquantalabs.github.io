@@ -1,0 +1,26 @@
+{
+  "@context": ["https://www.w3.org/ns/did/v1"],
+  "id": "did:web:stellarquantalabs.org",
+  "verificationMethod": [
+    {
+      "id": "did:web:stellarquantalabs.org#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:stellarquantalabs.org",
+      "publicKeyJwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Ir9QTyM4YcFg1BUuX88Glfmztt-PrOYmSV8axSWuWSk",
+        "y": "k6_CXsAmNFx29vHVPV5_BUpwqIRes_xVD80r_BoZ3Kc"
+      }
+    }
+  ],
+  "authentication": ["did:web:stellarquantalabs.org#key-1"],
+  "assertionMethod": ["did:web:stellarquantalabs.org#key-1"],
+  "service": [
+    {
+      "id": "did:web:stellarquantalabs.org#linkeddomains",
+      "type": "LinkedDomains",
+      "serviceEndpoint": { "origins": ["https://stellarquantalabs.org/"] }
+    }
+  ]
+}
